@@ -41,7 +41,8 @@ class Scraper(object):
 
     def save(self, pet):
         self.c.execute('INSERT INTO seen (site, pet) VALUES (?, ?)', (pet.site, pet.pet_id))
-        self.conn.commit()
+        if TWEET:
+            self.conn.commit()
 
     def do_pet(self, pet):
         if self.seen(pet):
