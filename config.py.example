@@ -1,0 +1,5 @@
+consumer_key='foo'
+consumer_secret='bar'
+access_token_key='baz'
+access_token_secret='dsfargeg'
+dbname='db.sqlite3'
