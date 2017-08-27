@@ -2,6 +2,7 @@ import config
 
 import sqlite3
 import re
+import time
 
 import requests
 from lxml import html
@@ -49,6 +50,7 @@ class Scraper(object):
             return
         self.tweet(pet)
         self.save(pet)
+        time.sleep(5*60)
 
     def tweet(self, pet):
         status = "{0}: {1} {2}".format(pet.site_name, pet.pet_name, pet.pet_url)
