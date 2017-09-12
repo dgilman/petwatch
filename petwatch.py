@@ -19,8 +19,8 @@ class Pet(object):
         self.pet_url = pet_url
         self.img_src = img_src
 
-    def __repr__(self):
-        return 'Pet: {0} {1} {2} {3}'.format(self.site_name, self.pet_id, self.pet_name, self.pet_url)
+    def __unicode__(self):
+        return u'Pet: {0} {1} {2} {3}'.format(self.site_name, self.pet_id, self.pet_name, self.pet_url)
 
 class Scraper(object):
     def __init__(self):
@@ -50,14 +50,15 @@ class Scraper(object):
             return
         self.tweet(pet)
         self.save(pet)
-        time.sleep(5*60)
+        if TWEET:
+            time.sleep(5*60)
 
     def tweet(self, pet):
-        status = "{0}: {1} {2}".format(pet.site_name, pet.pet_name, pet.pet_url)
+        status = u"{0}: {1} {2}".format(pet.site_name, pet.pet_name, pet.pet_url)
         if TWEET:
             self.api.PostUpdate(status, media=pet.img_src)
         else:
-            print pet
+            print unicode(pet)
 
 class PetHarbor(object):
     PET_ID = re.compile('ID=([^&]*)&')
@@ -89,7 +90,7 @@ class PetHarbor(object):
         try:
             pet_name = self.PET_NAME.search(pet[1].text).group(1)
         except Exception:
-            pet_name = 'Unknown'
+            pet_name = u'Unknown'
 
         pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
         self.scraper.do_pet(pet)
@@ -114,6 +115,9 @@ class PetFinder(object):
         if len(np) != 0:
             self.do_page('http://fpm.petfinder.com/petlist/petlist.cgi' + np[0].attrib['href'])
 
+    def _pet_name(self, pet):
+        return pet[1][0].text.strip()
+
     def do_pet(self, pet):
         pet_url = pet[0][0].attrib['href'].strip()
         if not pet_url.startswith('https://'):
@@ -124,12 +128,19 @@ class PetFinder(object):
         if 'camerashy' in img_src:
             img_src = None
         pet_id = self.PET_ID.search(pet_url).group(1)
-        pet_name = pet[1][0].text.strip()
+        pet_name = self._pet_name(pet)
 
 
         pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
         self.scraper.do_pet(pet)
 
+class C2CAD(PetFinder):
+    def _pet_name(self, pet):
+        # Delete the weird A.. thing
+        name = pet[1][0].text.strip()
+        if name.startswith('A..'):
+            return name[3:].strip()
+        return name
 
 def main():
     scraper = Scraper()
@@ -147,6 +158,7 @@ def main():
     sites.append(PetFinder(scraper, 10, 'North Mecklenburg Animal Rescue Cats', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC287&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
     sites.append(PetFinder(scraper, 11, 'Cornelius Animal Shelter Dogs', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC393&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
     sites.append(PetFinder(scraper, 12, 'Cornelius Animal Shelter Cats', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC393&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
+    sites.append(C2CAD(scraper, 13, 'Catering to Cats & Dogs', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC626&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
 
 
     [site.run() for site in sites]
