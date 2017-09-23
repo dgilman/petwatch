@@ -142,7 +142,7 @@ class C2CAD(PetFinder):
             return name[3:].strip()
         return name
 
-def main():
+def petwatch():
     scraper = Scraper()
 
     sites = []
@@ -162,6 +162,23 @@ def main():
 
 
     [site.run() for site in sites]
+
+def main():
+    try:
+        petwatch()
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+
+        import smtplib
+        import email.mime.text
+        msg = email.mime.text.MIMEText(tb)
+        msg['Subject'] = '[petwatch] Exception while scraping: {0}'.format(str(e))
+        msg['From'] = config.email_from
+        msg['To'] = config.email_to
+        s = smtplib.SMTP('localhost')
+        s.sendmail(config.email_from, config.email_to, msg.as_string())
+        s.quit()
 
 if __name__ == "__main__":
     main()
