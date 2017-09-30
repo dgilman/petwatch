@@ -126,7 +126,7 @@ class PetFinder(object):
         if not img_src.startswith('https://'):
             img_src = 'https://' + img_src
         if 'camerashy' in img_src:
-            img_src = None
+            return
         pet_id = self.PET_ID.search(pet_url).group(1)
         pet_name = self._pet_name(pet)
 
