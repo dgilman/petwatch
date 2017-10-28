@@ -8,7 +8,7 @@ import requests
 from lxml import html
 import twitter
 
-TWEET = True
+TWEET = False
 
 class Pet(object):
     def __init__(self, site, site_name, pet_id, pet_name, pet_url, img_src):
@@ -146,19 +146,27 @@ def petwatch():
     scraper = Scraper()
 
     sites = []
-    sites.append(PetHarbor(scraper, 1, 'Charlotte Animal Care & Control Dogs', 'http://petharbor.com/results.asp?WHERE=type_DOG&PAGE=1&searchtype=ADOPT&rows=10&imght=120&imgres=thumb&view=sysadm.v_chrl1&bgcolor=000099&text=ffffff&link=ffffff&alink=ffffff&vlink=ffffff&fontface=arial&fontsize=10&col_hdr_bg=ffffff&col_hdr_fg=0000ff&col_bg=ffffff&col_fg=000000&start=4&shelterlist=%27CHRL%27'))
-    sites.append(PetHarbor(scraper, 2, 'Charlotte Animal Care & Control Cats', 'http://petharbor.com/results.asp?WHERE=type_CAT&PAGE=1&searchtype=ADOPT&rows=10&imght=120&imgres=thumb&view=sysadm.v_chrl1&bgcolor=000099&text=ffffff&link=ffffff&alink=ffffff&vlink=ffffff&fontface=arial&fontsize=10&col_hdr_bg=ffffff&col_hdr_fg=0000ff&col_bg=ffffff&col_fg=000000&start=4&shelterlist=%27CHRL%27'))
-    sites.append(PetFinder(scraper, 3, 'Humane Society of York County Dogs', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=SC76&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
-    sites.append(PetFinder(scraper, 4, 'Humane Society of York County Cats', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=SC76&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
-    sites.append(PetFinder(scraper, 5, 'Greater Charlotte SPCA Dogs', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC691&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
-    sites.append(PetFinder(scraper, 6, 'Greater Charlotte SPCA Cats', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC691&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
-    sites.append(PetFinder(scraper, 7, 'Humane Society of Charlotte Dogs', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC246&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
-    sites.append(PetFinder(scraper, 8, 'Humane Society of Charlotte Cats', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC246&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
-    sites.append(PetFinder(scraper, 9, 'North Mecklenburg Animal Rescue Dogs', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC287&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
-    sites.append(PetFinder(scraper, 10, 'North Mecklenburg Animal Rescue Cats', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC287&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
-    sites.append(PetFinder(scraper, 11, 'Cornelius Animal Shelter Dogs', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC393&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
-    sites.append(PetFinder(scraper, 12, 'Cornelius Animal Shelter Cats', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC393&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
+    sites.append(PetHarbor(scraper, 1, 'Charlotte Animal Care & Control', 'http://petharbor.com/results.asp?WHERE=type_DOG&PAGE=1&searchtype=ADOPT&rows=10&imght=120&imgres=thumb&view=sysadm.v_chrl1&bgcolor=000099&text=ffffff&link=ffffff&alink=ffffff&vlink=ffffff&fontface=arial&fontsize=10&col_hdr_bg=ffffff&col_hdr_fg=0000ff&col_bg=ffffff&col_fg=000000&start=4&shelterlist=%27CHRL%27'))
+    sites.append(PetHarbor(scraper, 2, 'Charlotte Animal Care & Control', 'http://petharbor.com/results.asp?WHERE=type_CAT&PAGE=1&searchtype=ADOPT&rows=10&imght=120&imgres=thumb&view=sysadm.v_chrl1&bgcolor=000099&text=ffffff&link=ffffff&alink=ffffff&vlink=ffffff&fontface=arial&fontsize=10&col_hdr_bg=ffffff&col_hdr_fg=0000ff&col_bg=ffffff&col_fg=000000&start=4&shelterlist=%27CHRL%27'))
+    sites.append(PetFinder(scraper, 3, 'Humane Society of York County', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=SC76&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
+    sites.append(PetFinder(scraper, 4, 'Humane Society of York County', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=SC76&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
+    sites.append(PetFinder(scraper, 5, 'Greater Charlotte SPCA', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC691&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
+    sites.append(PetFinder(scraper, 6, 'Greater Charlotte SPCA', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC691&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
+    sites.append(PetFinder(scraper, 7, 'Humane Society of Charlotte', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC246&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
+    sites.append(PetFinder(scraper, 8, 'Humane Society of Charlotte', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC246&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
+    sites.append(PetFinder(scraper, 9, 'North Mecklenburg Animal Rescue', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC287&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
+    sites.append(PetFinder(scraper, 10, 'North Mecklenburg Animal Rescue', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC287&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
+    sites.append(PetFinder(scraper, 11, 'Cornelius Animal Shelter', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC393&status=A&age=&limit=25&offset=0&animal=Dog&title=&style=15'))
+    sites.append(PetFinder(scraper, 12, 'Cornelius Animal Shelter', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC393&status=A&age=&limit=25&offset=0&animal=Cat&title=&style=15'))
     sites.append(C2CAD(scraper, 13, 'Catering to Cats & Dogs', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC626&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
+    sites.append(PetFinder(scraper, 14, 'Furever Angels', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC514&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
+    sites.append(PetFinder(scraper, 15, 'South Charlotte Dog Rescue', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC948&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
+    sites.append(PetFinder(scraper, 16, 'S.A.F.E Animal Haven', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC371&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
+    sites.append(PetFinder(scraper, 17, 'MyNextPet.com', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC65&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
+    sites.append(PetFinder(scraper, 18, 'Richardson Rescue', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=SC113&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
+    sites.append(PetFinder(scraper, 19, 'Faithful Friends Animal Sanctuary', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC519&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
+    sites.append(PetFinder(scraper, 20, 'Ruff Life Animal Rescue', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=SC402&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
+    sites.append(PetFinder(scraper, 21, 'Carolina PAWS', 'http://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC516&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
 
 
     [site.run() for site in sites]
