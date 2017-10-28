@@ -272,7 +272,6 @@ class Cabarruscounty(object):
         self.scraper.do_pet(pet)
 
 class Concordhumane(object):
-    PET_ID = re.compile('post-(\d+)')
     def __init__(self, scraper, site, site_name, url):
         self.scraper = scraper
         self.site = site
@@ -321,7 +320,6 @@ class Concordhumanedogs(Concordhumane):
 
 
 class Charlottecockerrescue(object):
-    PET_NAME = re.compile('Hello everyone, my name is "([^"]+)"!')
     def __init__(self, scraper, site, site_name, url):
         self.scraper = scraper
         self.site = site
