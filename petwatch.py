@@ -292,12 +292,33 @@ class Concordhumane(object):
             self.do_page(flip_url(url, next_link[0][0].attrib['href']))
 
     def do_pet(self, pet):
-        pet_name = pet.xpath('span/span/a')[0].text.strip()
-        pet_url = pet.xpath('div/div/a')[0].attrib['href']
+        pet_name = self.get_pet_name(pet)
+        pet_url = self.get_pet_url(pet)
         pet_id = string2int(pet_name)
-        img_src = pet.xpath('div/div/a/img')[0].attrib['src']
+        img_src = self.get_img_src(pet)
         pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
         self.scraper.do_pet(pet)
+
+class Concordhumanecats(Concordhumane):
+    def get_pet_name(self, pet):
+        return pet.xpath('span/span/a')[0].text.strip()
+
+    def get_pet_url(self, pet):
+        return flip_url(self.url, pet.xpath('div/div/a')[0].attrib['href'])
+
+    def get_img_src(self, pet):
+        return pet.xpath('div/div/a/img')[0].attrib['src']
+
+class Concordhumanedogs(Concordhumane):
+    def get_pet_name(self, pet):
+        return pet.xpath('span/a')[0].text.strip().split(' DR')[0]
+
+    def get_pet_url(self, pet):
+        return flip_url(self.url, pet.xpath('span/a')[0].attrib['href'])
+
+    def get_img_src(self, pet):
+        return pet.xpath('div/a/img')[0].attrib['src']
+
 
 class Charlottecockerrescue(object):
     PET_NAME = re.compile('Hello everyone, my name is "([^"]+)"!')
@@ -355,8 +376,8 @@ def petwatch():
     sites.append(Rescuegroups2(scraper, 28, 'South of the Bully', 'http://www.southofthebully.com/services.html', 'http://toolkit.rescuegroups.org/j/3/grid3_layout.php?toolkitKey=2kOov42A'))
     sites.append(Cabarruscounty(scraper, 29, 'Cabarrus County Animal Shelter', 'https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue', 'https://sro.cabarruscounty.us/Animal_Shelter/slick/DOGS_AVAIL_AVRE.php'))
     sites.append(Cabarruscounty(scraper, 30, 'Cabarrus County Animal Shelter', 'https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue', 'https://sro.cabarruscounty.us/Animal_Shelter/slick/CATS_AVAIL_AVRE.php'))
-    sites.append(Concordhumane(scraper, 31, 'Humane Society of Concord', 'http://www.cabarrushumanesociety.org/browse/cat'))
-    sites.append(Concordhumane(scraper, 32, 'Humane Society of Concord', 'http://www.cabarrushumanesociety.org/browse/dog'))
+    sites.append(Concordhumanecats(scraper, 31, 'Humane Society of Concord', 'http://www.cabarrushumanesociety.org/browse/cat'))
+    sites.append(Concordhumanedogs(scraper, 32, 'Humane Society of Concord', 'http://www.cabarrushumanesociety.org/browse/dog'))
     sites.append(Charlottecockerrescue(scraper, 33, 'Charlotte Cocker Rescue', 'http://charlottecockerrescue.com/adopt-a-cocker-spaniel.htm'))
 
 
