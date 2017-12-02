@@ -5,6 +5,7 @@ import re
 import time
 import hashlib
 import urlparse
+from tempfile import NamedTemporaryFile
 
 import requests
 from lxml import html
@@ -68,7 +69,11 @@ class Scraper(object):
     def tweet(self, pet):
         status = u"{0}: {1} {2}".format(pet.site_name, pet.pet_name, pet.pet_url)
         if TWEET:
-            self.api.PostUpdate(status, media=pet.img_src)
+            # In order to work around bugs in python-twitter
+            # we need to handle some things ourselves.
+            fd = NamedTemporaryFile(suffix='.jpg')
+            fd.write(requests.get(pet.img_src).content)
+            self.api.PostUpdate(status, media=fd)
         else:
             print unicode(pet)
 
@@ -368,9 +373,9 @@ def petwatch():
     sites.append(Petstablished(scraper, 22, 'Piedmont Animal Rescue', 'https://www.petstablished.com/organization/99949/widget/animals'))
     sites.append(Petstablished(scraper, 23, 'Lake Norman Humane', 'https://www.petstablished.com/organization/30590/widget/animals'))
     sites.append(Petstablished(scraper, 24, 'Freedom Farm Rescue', 'https://www.petstablished.com/organization/55767/widget/animals'))
-    sites.append(PetFinder(scraper, 25, 'Hope for All Dogs', 'https://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC834&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
+#    sites.append(PetFinder(scraper, 25, 'Hope for All Dogs', 'https://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC834&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
     sites.append(Rescuegroups(scraper, 26, 'Cabarrus Pets Society', 'http://www.cabarruspets.com/animals/browse'))
-    sites.append(Grrcc(scraper, 27, 'Hope for All Dogs', 'https://grrcc.com/dogs/'))
+    sites.append(Grrcc(scraper, 27, 'Golden Retriever Rescue Club of Charlotte', 'https://grrcc.com/dogs/'))
     sites.append(Rescuegroups2(scraper, 28, 'South of the Bully', 'http://www.southofthebully.com/services.html', 'http://toolkit.rescuegroups.org/j/3/grid3_layout.php?toolkitKey=2kOov42A'))
     sites.append(Cabarruscounty(scraper, 29, 'Cabarrus County Animal Shelter', 'https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue', 'https://sro.cabarruscounty.us/Animal_Shelter/slick/DOGS_AVAIL_AVRE.php'))
     sites.append(Cabarruscounty(scraper, 30, 'Cabarrus County Animal Shelter', 'https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue', 'https://sro.cabarruscounty.us/Animal_Shelter/slick/CATS_AVAIL_AVRE.php'))
