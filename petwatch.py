@@ -273,6 +273,8 @@ class Cabarruscounty(object):
         pet_url = self.pet_url
         pet_id = int(pet.xpath('div')[0].text[3:])
         img_src = flip_url(self.scrape_url, pet.xpath('img')[0].attrib['src'])
+        if 'no-image-available' in img_src:
+            return
         pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
         self.scraper.do_pet(pet)
 
@@ -389,7 +391,8 @@ def petwatch():
 def main():
     try:
         petwatch()
-    except Exception as e:
+    except Exception:
+#        import pdb; pdb.post_mortem()
         import traceback
         tb = traceback.format_exc()
 
