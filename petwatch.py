@@ -6,6 +6,8 @@ import time
 import hashlib
 import urlparse
 from tempfile import NamedTemporaryFile
+import datetime
+import time
 
 import requests
 from lxml import html
@@ -15,6 +17,9 @@ TWEET = True
 SAVE = True
 SLEEP = True
 
+NOW = datetime.datetime.utcnow()
+THIRTY_DAYS_AGO = NOW - datetime.timedelta(days=30)
+
 def flip_url(url, path):
     return urlparse.urlsplit(url)._replace(path=path, query='', fragment='').geturl()
 
@@ -22,6 +27,15 @@ def string2int(string):
     ho = hashlib.sha512()
     ho.update(string)
     return int(ho.hexdigest(), 16) % (10 ** 8)
+
+def adapt_datetime(ts):
+    return time.mktime(ts.timetuple())
+
+def convert_datetime(ts):
+    return datetime.datetime.fromtimestamp(ts)
+
+sqlite3.register_adapter(datetime.datetime, adapt_datetime)
+sqlite3.register_converter("DATETIME", convert_datetime)
 
 class Pet(object):
     def __init__(self, site, site_name, pet_id, pet_name, pet_url, img_src):
@@ -51,10 +65,11 @@ class Scraper(object):
         if len(rval) == 0:
             return False
         else:
+            self.c.execute('UPDATE seen SET seen = ? WHERE site = ? AND pet = ?', (NOW, pet.site, pet.pet_id))
             return True
 
     def save(self, pet):
-        self.c.execute('INSERT INTO seen (site, pet) VALUES (?, ?)', (pet.site, pet.pet_id))
+        self.c.execute('INSERT INTO seen (site, pet, seen) VALUES (?, ?, ?)', (pet.site, pet.pet_id, NOW))
         if SAVE:
             self.conn.commit()
 
@@ -76,6 +91,11 @@ class Scraper(object):
             self.api.PostUpdate(status, media=fd)
         else:
             print unicode(pet)
+
+    def end(self):
+        self.c.execute("DELETE FROM seen WHERE seen IS NULL or SEEN < ?", (THIRTY_DAYS_AGO,))
+        self.conn.commit()
+        self.conn.close()
 
 class PetHarbor(object):
     PET_ID = re.compile('ID=([^&]*)&')
@@ -387,6 +407,7 @@ def petwatch():
 
 
     [site.run() for site in sites]
+    scraper.end()
 
 def main():
     try:
