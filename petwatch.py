@@ -25,7 +25,7 @@ def flip_url(url, path):
 
 def string2int(string):
     ho = hashlib.sha512()
-    ho.update(string)
+    ho.update(string.encode('utf-8'))
     return int(ho.hexdigest(), 16) % (10 ** 8)
 
 def adapt_datetime(ts):
@@ -404,7 +404,7 @@ def petwatch():
     sites.append(Concordhumanecats(scraper, 31, 'Humane Society of Concord', 'http://www.cabarrushumanesociety.org/browse/cat'))
     sites.append(Concordhumanedogs(scraper, 32, 'Humane Society of Concord', 'http://www.cabarrushumanesociety.org/browse/dog'))
     sites.append(Charlottecockerrescue(scraper, 33, 'Charlotte Cocker Rescue', 'http://charlottecockerrescue.com/adopt-a-cocker-spaniel.htm'))
-
+    sites.append(PetFinder(scraper, 34, 'Maggie Lu\'s Safe Haven Rescue', 'https://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC980&status=A&age=&limit=25&offset=0&animal=&title=&style=15'))
 
     [site.run() for site in sites]
     scraper.end()
@@ -412,7 +412,7 @@ def petwatch():
 def main():
     try:
         petwatch()
-    except Exception:
+    except Exception as e:
 #        import pdb; pdb.post_mortem()
         import traceback
         tb = traceback.format_exc()
