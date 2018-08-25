@@ -221,7 +221,10 @@ class Rescuegroups(object):
         pet_name = pet.xpath('div/a/b')[0].text.strip()
         pet_url = flip_url(self.url, pet.xpath('div[@class="browsePicture"]/a')[0].attrib['href'])
         pet_id = int(self.PET_ID.search(pet_url).group(1))
-        img_src = pet.xpath('div/a/img')[0].attrib['src']
+        img_obj = pet.xpath('div/a/img')
+        if len(img_obj) == 0:
+            return
+        img_src = img_obj[0].attrib['src']
         pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
         self.scraper.do_pet(pet)
 
@@ -322,6 +325,8 @@ class Concordhumane(object):
         pet_url = self.get_pet_url(pet)
         pet_id = string2int(pet_name)
         img_src = self.get_img_src(pet)
+        if img_src == None:
+            return
         pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
         self.scraper.do_pet(pet)
 
@@ -333,7 +338,10 @@ class Concordhumanecats(Concordhumane):
         return flip_url(self.url, pet.xpath('div/div/a')[0].attrib['href'])
 
     def get_img_src(self, pet):
-        return pet.xpath('div/div/a/img')[0].attrib['src']
+        img_elem = pet.xpath('div/div/a/img')
+        if len(img_elem) == 0:
+            return
+        return img_elem[0].attrib['src']
 
 class Concordhumanedogs(Concordhumane):
     def get_pet_name(self, pet):
@@ -343,7 +351,10 @@ class Concordhumanedogs(Concordhumane):
         return flip_url(self.url, pet.xpath('span/a')[0].attrib['href'])
 
     def get_img_src(self, pet):
-        return pet.xpath('div/a/img')[0].attrib['src']
+        img_elem = pet.xpath('div/a/img')
+        if len(img_elem) == 0:
+            return
+        return img_elem[0].attrib['src']
 
 
 class Charlottecockerrescue(object):
