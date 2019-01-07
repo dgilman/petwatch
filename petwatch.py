@@ -159,6 +159,8 @@ class PetFinder(object):
         pet_url = pet[0][0].attrib['href'].strip()
         if not pet_url.startswith('https://'):
             pet_url = 'https://' + pet_url
+        if len(pet[0][0]) == 0:
+            return
         img_src = pet[0][0][1].attrib['src'].strip()
         if not img_src.startswith('https://'):
             img_src = 'https://' + img_src
