@@ -8,6 +8,7 @@ import urlparse
 from tempfile import NamedTemporaryFile
 import datetime
 import time
+import functools
 
 import requests
 from lxml import html
@@ -36,6 +37,8 @@ def convert_datetime(ts):
 
 sqlite3.register_adapter(datetime.datetime, adapt_datetime)
 sqlite3.register_converter("DATETIME", convert_datetime)
+
+get = functools.partial(requests.get, timeout=60)
 
 class Pet(object):
     def __init__(self, site, site_name, pet_id, pet_name, pet_url, img_src):
@@ -87,7 +90,7 @@ class Scraper(object):
             # In order to work around bugs in python-twitter
             # we need to handle some things ourselves.
             fd = NamedTemporaryFile(suffix='.jpg')
-            fd.write(requests.get(pet.img_src).content)
+            fd.write(get(pet.img_src).content)
             self.api.PostUpdate(status, media=fd)
         else:
             print unicode(pet)
@@ -111,7 +114,7 @@ class PetHarbor(object):
         self.do_page(self.url)
 
     def do_page(self, url):
-        et = html.fromstring(requests.get(url).text)
+        et = html.fromstring(get(url).text)
         pets = et.xpath('//table[@class="ResultsTable"]/tr')[1:]
         [self.do_pet(pet) for pet in pets]
 
@@ -144,7 +147,7 @@ class PetFinder(object):
         self.do_page(self.url)
 
     def do_page(self, url):
-        et = html.fromstring(requests.get(url).text)
+        et = html.fromstring(get(url).text)
         pets = et.xpath('//div[@class="each_pet"]')
         [self.do_pet(pet) for pet in pets]
 
@@ -190,7 +193,7 @@ class Petstablished(object):
         self.url = url
 
     def run(self):
-        et = html.fromstring(requests.get(self.url).text)
+        et = html.fromstring(get(self.url).text)
         pets = et.xpath('//div[@class="pets"]/div[@class="pet "]')
         for pet in pets:
             self.do_pet(pet)
@@ -214,7 +217,7 @@ class Rescuegroups(object):
         self.url = url
 
     def run(self):
-        et = html.fromstring(requests.get(self.url).text)
+        et = html.fromstring(get(self.url).text)
         pets = et.xpath('//div[@class="animalBrowsePanel"]/div[@class="browse"]')
         for pet in pets:
             self.do_pet(pet)
@@ -239,7 +242,7 @@ class Grrcc(object):
         self.url = url
 
     def run(self):
-        et = html.fromstring(requests.get(self.url).text)
+        et = html.fromstring(get(self.url).text)
         pets = et.xpath('//article')
         for pet in pets:
             self.do_pet(pet)
@@ -262,7 +265,7 @@ class Rescuegroups2(object):
         self.scrape_url = scrape_url
 
     def run(self):
-        et = html.fromstring(requests.get(self.scrape_url).text)
+        et = html.fromstring(get(self.scrape_url).text)
         pets = et.xpath('//td[@class="rgtkSearchResultsCell"]')
         for pet in pets:
             self.do_pet(pet)
@@ -288,7 +291,7 @@ class Cabarruscounty(object):
         self.scrape_url = scrape_url
 
     def run(self):
-        et = html.fromstring(requests.get(self.scrape_url).text)
+        et = html.fromstring(get(self.scrape_url).text)
         pets = et.xpath('//div[@class="image-wrraper"]')
         for pet in pets:
             self.do_pet(pet)
@@ -317,7 +320,7 @@ class Concordhumane(object):
         self.do_page(self.url)
 
     def do_page(self, url):
-        et = html.fromstring(requests.get(url).text)
+        et = html.fromstring(get(url).text)
         pets = et.xpath('//div[@class="item-list"]/ul[not(@class="pager")]/li')
         for pet in pets:
             self.do_pet(pet)
@@ -370,7 +373,7 @@ class Charlottecockerrescue(object):
         self.url = url
 
     def run(self):
-        et = html.fromstring(requests.get(self.url).text)
+        et = html.fromstring(get(self.url).text)
         pets = et.xpath('//div[@class="dog-container"]/..')
         for pet in pets:
             self.do_pet(pet)
