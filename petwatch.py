@@ -270,7 +270,10 @@ class Rescuegroups2(object):
     def do_pet(self, pet):
         pet_name = pet.xpath('div[contains(concat(" ", @class, " "), " rgtkSearchPetName ")]/a')[0].text
         pet_url = self.pet_url
-        img_src = pet.xpath('div/a/img')[0].attrib['src']
+        img_obj = pet.xpath('div/a/img')
+        if len(img_obj) == 0:
+            return
+        img_src = img_obj[0].attrib['src']
         pet_id = int(self.PET_ID.search(img_src).group(1))
         pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
         self.scraper.do_pet(pet)
