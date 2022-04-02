@@ -10,10 +10,12 @@ from tempfile import NamedTemporaryFile
 import datetime
 import time
 import functools
+import imghdr
 
 import requests
+from requests.adapters import HTTPAdapter, Retry
 from lxml import html
-import twitter
+import tweepy
 
 TWEET = True
 SAVE = True
@@ -30,7 +32,7 @@ def flip_url(url, path):
 def string2int(string):
     ho = hashlib.sha512()
     ho.update(string.encode("utf-8"))
-    return int(ho.hexdigest(), 16) % (10 ** 8)
+    return int(ho.hexdigest(), 16) % (10**8)
 
 
 def adapt_datetime(ts):
@@ -44,33 +46,42 @@ def convert_datetime(ts):
 sqlite3.register_adapter(datetime.datetime, adapt_datetime)
 sqlite3.register_converter("DATETIME", convert_datetime)
 
-get = functools.partial(requests.get, timeout=60)
+
+requests_session = requests.Session()
+retries = Retry(total=5, backoff_factor=5, status_forcelist=[500, 502, 503, 504])
+requests_session.mount("https://", HTTPAdapter(max_retries=retries))
+requests_session.mount("http://", HTTPAdapter(max_retries=retries))
+
+
+get = functools.partial(requests_session.get, timeout=60)
+post = functools.partial(requests_session.post, timeout=60)
 
 
 class Pet(object):
-    def __init__(self, site, site_name, pet_id, pet_name, pet_url, img_src):
+    def __init__(self, site, site_name, pet_id, pet_name, pet_url, img_srcs):
         self.site = site
         self.site_name = site_name
         self.pet_id = pet_id
         self.pet_name = pet_name
         self.pet_url = pet_url
-        self.img_src = img_src
+        self.img_srcs = img_srcs
 
     def __unicode__(self):
-        return f"Pet: {self.site_name} {self.pet_id} {self.pet_name} {self.pet_url} {self.img_src}"
+        return f"Pet: {self.site_name} {self.pet_id} {self.pet_name} {self.pet_url} {self.img_srcs}"
 
 
 class Scraper(object):
     def __init__(self):
         self.conn = sqlite3.connect(config.dbname)
         self.c = self.conn.cursor()
-        self.api = twitter.Api(
-            consumer_key=config.consumer_key,
-            consumer_secret=config.consumer_secret,
-            access_token_key=config.access_token_key,
-            access_token_secret=config.access_token_secret,
-            sleep_on_rate_limit=True,
+        self.tweepy_auth = tweepy.OAuth1UserHandler(
+            config.consumer_key,
+            config.consumer_secret,
+            config.access_token_key,
+            config.access_token_secret,
         )
+        self.api = tweepy.API(self.tweepy_auth, wait_on_rate_limit=True)
+        self.api.session = requests_session
 
     def seen(self, pet):
         self.c.execute(
@@ -105,19 +116,41 @@ class Scraper(object):
     def tweet(self, pet):
         status = f"{pet.site_name}: {pet.pet_name} {pet.pet_url}"
         if TWEET:
-            # In order to work around bugs in python-twitter
-            # we need to handle some things ourselves.
-            fd = NamedTemporaryFile(suffix=".jpg")
-            fd.write(get(pet.img_src).content)
-            self.api.PostUpdate(status, media=fd)
+            media_ids = []
+            for img_src in pet.img_srcs:
+                img_content = get(img_src).content
+                img_type = imghdr.what(None, h=img_content)
+                if img_type == "jpeg":
+                    suffix = ".jpg"
+                elif img_type == "png":
+                    suffix = ".png"
+                elif img_type == "bmp":
+                    suffix = ".bmp"
+                elif img_type == "webp":
+                    suffix = ".webp"
+                else:
+                    raise Exception(f"Unknown file type {img_src}")
+
+                with NamedTemporaryFile(suffix=suffix) as fd:
+                    fd.write(img_content)
+                    try:
+                        media = self.api.media_upload(filename=fd.name)
+                    except tweepy.BadRequest as e:
+                        if "media type unrecognized." in e.api_errors:
+                            print(f"Unknown media type for {img_src}")
+                            return
+                        raise
+                media_ids.append(media.media_id_string)
+            self.api.update_status(status, media_ids=media_ids[:4])
         else:
-            print(str(pet))
+            print(str(pet), status)
 
     def end(self):
         self.c.execute(
             "DELETE FROM seen WHERE seen IS NULL or SEEN < ?", (THIRTY_DAYS_AGO,)
         )
-        self.conn.commit()
+        if SAVE:
+            self.conn.commit()
         self.conn.close()
 
 
@@ -153,7 +186,7 @@ class PetHarbor(object):
         except Exception:
             pet_name = "Unknown"
 
-        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
+        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, [img_src])
         self.scraper.do_pet(pet)
 
 
@@ -187,17 +220,26 @@ class PetFinder(object):
         pet_url = pet[0][0].attrib["href"].strip()
         if not pet_url.startswith("https://"):
             pet_url = "https://" + pet_url
+
         if len(pet[0][0]) < 2:
             return
+
         img_src = pet[0][0][1].attrib["src"].strip()
         if not img_src.startswith("https://"):
             img_src = "https://" + img_src
         if "camerashy" in img_src:
             return
+
         pet_id = self.PET_ID.search(pet_url).group(1)
         pet_name = self._pet_name(pet)
 
-        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
+        pet_detail = html.fromstring(get(pet_url).text)
+        pet_imgs = pet_detail.xpath(
+            '//div[@class="petCarousel-body"]/img[@pfdc-pet-carousel-slide]'
+        )
+        img_urls = [img.attrib["src"] for img in pet_imgs]
+
+        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_urls)
         self.scraper.do_pet(pet)
 
 
@@ -232,7 +274,7 @@ class Petstablished(object):
         img_src = pet.xpath("div/a/img")[0].attrib["src"]
         if "defaults" in img_src:
             return
-        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
+        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, [img_src])
         self.scraper.do_pet(pet)
 
 
@@ -261,7 +303,7 @@ class Rescuegroups(object):
         if len(img_obj) == 0:
             return
         img_src = img_obj[0].attrib["src"]
-        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
+        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, [img_src])
         self.scraper.do_pet(pet)
 
 
@@ -291,7 +333,7 @@ class Grrcc(object):
         img_src = pet.xpath('descendant::a[@class="cmsms_image_link"]')[0].attrib[
             "href"
         ]
-        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
+        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, [img_src])
         self.scraper.do_pet(pet)
 
 
@@ -321,37 +363,34 @@ class Rescuegroups2(object):
             return
         img_src = img_obj[0].attrib["src"]
         pet_id = int(self.PET_ID.search(img_src).group(1))
-        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
+        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, [img_src])
         self.scraper.do_pet(pet)
 
 
 class Cabarruscounty(object):
-    PET_NAME = re.compile('(Hello everyone|Hi there), my name is "([^"]+)"!')
-
-    def __init__(self, scraper, site, site_name, pet_url, scrape_url):
+    def __init__(self, scraper, site, site_name, scrape_url, pet_url, animal_type):
         self.scraper = scraper
         self.site = site
         self.site_name = site_name
-        self.pet_url = pet_url
         self.scrape_url = scrape_url
+        self.pet_url = pet_url
+        self.animal_type = animal_type
 
     def run(self):
-        et = html.fromstring(get(self.scrape_url).text)
-        pets = et.xpath('//div[@class="image-wrraper"]')
+        pets = post(
+            self.scrape_url,
+            files={"fromSource": (None, "YES"), "animalType": (None, self.animal_type)},
+        )
+        pets = pets.json()
         for pet in pets:
             self.do_pet(pet)
 
     def do_pet(self, pet):
-        pet_name_match = self.PET_NAME.search(pet.xpath("div/button")[0].attrib["id"])
-        if pet_name_match == None:
-            return
-        pet_name = pet_name_match.group(1)
+        pet_name = pet["name"]
         pet_url = self.pet_url
-        pet_id = int(pet.xpath("div")[0].text[3:])
-        img_src = flip_url(self.scrape_url, pet.xpath("img")[0].attrib["src"])
-        if "no-image-available" in img_src:
-            return
-        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
+        pet_id = pet["internalID"]
+        img_srcs = pet["photoURLs"]
+        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_srcs)
         self.scraper.do_pet(pet)
 
 
@@ -381,7 +420,7 @@ class Concordhumane(object):
         img_src = self.get_img_src(pet)
         if img_src == None:
             return
-        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
+        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, [img_src])
         self.scraper.do_pet(pet)
 
 
@@ -411,28 +450,6 @@ class Concordhumanedogs(Concordhumane):
         if len(img_elem) == 0:
             return
         return img_elem[0].attrib["src"]
-
-
-class Charlottecockerrescue(object):
-    def __init__(self, scraper, site, site_name, url):
-        self.scraper = scraper
-        self.site = site
-        self.site_name = site_name
-        self.url = url
-
-    def run(self):
-        et = html.fromstring(get(self.url).text)
-        pets = et.xpath('//div[@class="dog-container"]/..')
-        for pet in pets:
-            self.do_pet(pet)
-
-    def do_pet(self, pet):
-        pet_name = pet.xpath("div/div/p")[0].text.strip()
-        pet_url = flip_url(self.url, pet.attrib["href"])
-        pet_id = string2int(pet_name)
-        img_src = flip_url(self.url, pet.xpath("div/img")[0].attrib["src"])
-        pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, img_src)
-        self.scraper.do_pet(pet)
 
 
 def petwatch():
@@ -637,7 +654,7 @@ def petwatch():
             scraper,
             26,
             "Cabarrus Pets Society",
-            "http://www.cabarruspets.com/animals/browse",
+            "https://www.cabarruspets.com/animals/browse",
         )
     )
     sites.append(
@@ -654,33 +671,35 @@ def petwatch():
             28,
             "South of the Bully",
             "http://www.southofthebully.com/services.html",
-            "http://toolkit.rescuegroups.org/j/3/grid3_layout.php?toolkitKey=2kOov42A",
+            "https://toolkit.rescuegroups.org/j/3/grid3_layout.php?toolkitKey=2kOov42A",
         )
     )
-#    sites.append(
-#        Cabarruscounty(
-#            scraper,
-#            29,
-#            "Cabarrus County Animal Shelter",
-#            "https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue",
-#            "https://sro.cabarruscounty.us/Animal_Shelter/slick/DOGS_AVAIL_AVRE.php",
-#        )
-#    )
-#    sites.append(
-#        Cabarruscounty(
-#            scraper,
-#            30,
-#            "Cabarrus County Animal Shelter",
-#            "https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue",
-#            "https://sro.cabarruscounty.us/Animal_Shelter/slick/CATS_AVAIL_AVRE.php",
-#        )
-#    )
+    sites.append(
+        Cabarruscounty(
+            scraper,
+            29,
+            "Cabarrus County Animal Shelter",
+            "https://animals.cabarruscounty.us/PHP_SCRIPTS/retrieve_animals.php",
+            "https://animals.cabarruscounty.us/avail-dogs.html",
+            "availDogs",
+        )
+    )
+    sites.append(
+        Cabarruscounty(
+            scraper,
+            30,
+            "Cabarrus County Animal Shelter",
+            "https://animals.cabarruscounty.us/PHP_SCRIPTS/retrieve_animals.php",
+            "https://animals.cabarruscounty.us/avail-cats.html",
+            "availCats",
+        )
+    )
     sites.append(
         Concordhumanecats(
             scraper,
             31,
             "Humane Society of Concord",
-            "http://www.cabarrushumanesociety.org/browse/cat",
+            "https://www.cabarrushumanesociety.org/browse/cat",
         )
     )
     sites.append(
@@ -688,15 +707,15 @@ def petwatch():
             scraper,
             32,
             "Humane Society of Concord",
-            "http://www.cabarrushumanesociety.org/browse/dog",
+            "https://www.cabarrushumanesociety.org/browse/dog",
         )
     )
     sites.append(
-        Charlottecockerrescue(
+        PetFinder(
             scraper,
             33,
             "Charlotte Cocker Rescue",
-            "http://charlottecockerrescue.com/adopt-a-cocker-spaniel.htm",
+            "https://fpm.petfinder.com/petlist/petlist.cgi?shelter=NC146&status=A&age=&limit=25&offset=0&animal=&title=&style=15",
         )
     )
     sites.append(
@@ -716,7 +735,9 @@ def main():
     try:
         petwatch()
     except Exception as e:
-        #        import pdb; pdb.post_mortem()
+        # import pdb
+
+        # pdb.post_mortem()
         import traceback
 
         tb = traceback.format_exc()
