@@ -326,7 +326,7 @@ class Rescuegroups2(object):
 
 
 class Cabarruscounty(object):
-    PET_NAME = re.compile('Hello everyone, my name is "([^"]+)"!')
+    PET_NAME = re.compile('(Hello everyone|Hi there), my name is "([^"]+)"!')
 
     def __init__(self, scraper, site, site_name, pet_url, scrape_url):
         self.scraper = scraper
@@ -657,24 +657,24 @@ def petwatch():
             "http://toolkit.rescuegroups.org/j/3/grid3_layout.php?toolkitKey=2kOov42A",
         )
     )
-    sites.append(
-        Cabarruscounty(
-            scraper,
-            29,
-            "Cabarrus County Animal Shelter",
-            "https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue",
-            "https://sro.cabarruscounty.us/Animal_Shelter/slick/DOGS_AVAIL_AVRE.php",
-        )
-    )
-    sites.append(
-        Cabarruscounty(
-            scraper,
-            30,
-            "Cabarrus County Animal Shelter",
-            "https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue",
-            "https://sro.cabarruscounty.us/Animal_Shelter/slick/CATS_AVAIL_AVRE.php",
-        )
-    )
+#    sites.append(
+#        Cabarruscounty(
+#            scraper,
+#            29,
+#            "Cabarrus County Animal Shelter",
+#            "https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue",
+#            "https://sro.cabarruscounty.us/Animal_Shelter/slick/DOGS_AVAIL_AVRE.php",
+#        )
+#    )
+#    sites.append(
+#        Cabarruscounty(
+#            scraper,
+#            30,
+#            "Cabarrus County Animal Shelter",
+#            "https://www.cabarruscounty.us/resources/availalble-for-adoption-or-rescue",
+#            "https://sro.cabarruscounty.us/Animal_Shelter/slick/CATS_AVAIL_AVRE.php",
+#        )
+#    )
     sites.append(
         Concordhumanecats(
             scraper,
