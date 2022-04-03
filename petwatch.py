@@ -119,6 +119,9 @@ class Scraper(object):
             media_ids = []
             for img_src in pet.img_srcs:
                 img_content = get(img_src).content
+                if not img_content:
+                    continue
+
                 img_type = imghdr.what(None, h=img_content)
                 if img_type == "jpeg":
                     suffix = ".jpg"
