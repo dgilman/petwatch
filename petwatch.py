@@ -365,7 +365,10 @@ class Rescuegroups2(object):
         if len(img_obj) == 0:
             return
         img_src = img_obj[0].attrib["src"]
-        pet_id = int(self.PET_ID.search(img_src).group(1))
+        pet_re = self.PET_ID.search(img_src)
+        if not pet_re:
+            return
+        pet_id = int(pet_re.group(1))
         pet = Pet(self.site, self.site_name, pet_id, pet_name, pet_url, [img_src])
         self.scraper.do_pet(pet)
 
