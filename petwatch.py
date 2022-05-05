@@ -80,7 +80,7 @@ class Scraper(object):
             config.access_token_key,
             config.access_token_secret,
         )
-        self.api = tweepy.API(self.tweepy_auth, wait_on_rate_limit=True)
+        self.api = tweepy.API(self.tweepy_auth, wait_on_rate_limit=True, retry_count=5, retry_delay=65, retry_errors=(500, 502, 503, 504))
         self.api.session = requests_session
 
     def seen(self, pet):
