@@ -10,7 +10,7 @@ from tempfile import NamedTemporaryFile
 import datetime
 import time
 import functools
-import imghdr
+import filetype
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -128,15 +128,9 @@ class Scraper(object):
                 if not img_content:
                     continue
 
-                img_type = imghdr.what(None, h=img_content)
-                if img_type == "jpeg":
-                    suffix = ".jpg"
-                elif img_type == "png":
-                    suffix = ".png"
-                elif img_type == "bmp":
-                    suffix = ".bmp"
-                elif img_type == "webp":
-                    suffix = ".webp"
+                img_type = filetype.guess(img_content)
+                if img_type:
+                    suffix = f".{img_type.extension}"
                 else:
                     raise Exception(f"Unknown file type {img_src}")
 
