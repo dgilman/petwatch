@@ -93,7 +93,7 @@ class Scraper(object):
             consumer_secret=config.consumer_secret,
             access_token=config.access_token_key,
             access_token_secret=config.access_token_secret,
-            wait_on_rate_limit=True
+            wait_on_rate_limit=True,
         )
         self.client.session.mount("https://", HTTPAdapter(max_retries=retries))
         self.client.session.mount("http://", HTTPAdapter(max_retries=retries))
