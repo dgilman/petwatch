@@ -88,6 +88,15 @@ class Scraper(object):
             retry_errors=(500, 502, 503, 504),
         )
         self.api.session = requests_session
+        self.client = tweepy.Client(
+            consumer_key=config.consumer_key,
+            consumer_secret=config.consumer_secret,
+            access_token=config.access_token_key,
+            access_token_secret=config.access_token_secret,
+            wait_on_rate_limit=True
+        )
+        self.client.session.mount("https://", HTTPAdapter(max_retries=retries))
+        self.client.session.mount("http://", HTTPAdapter(max_retries=retries))
 
     def seen(self, pet):
         self.c.execute(
@@ -144,7 +153,7 @@ class Scraper(object):
                             return
                         raise
                 media_ids.append(media.media_id_string)
-            self.api.update_status(status, media_ids=media_ids[:4])
+            self.client.create_tweet(text=status, media_ids=media_ids[:4])
         else:
             print(str(pet), status)
 
