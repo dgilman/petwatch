@@ -1,5 +1,5 @@
-black==23.3.0
-lxml==4.9.2
-requests==2.30.0
+black==23.7.0
+lxml==4.9.3
+requests==2.31.0
 tweepy==4.14.0
 filetype==1.2.0
